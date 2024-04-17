@@ -1,0 +1,15 @@
+String paddedValue(int value) => value > 9 ? value.toString() : '0$value';
+
+
+String newLogLinePadding({ int logLevel = 0 }) => '           '+' '*logLevel*2;
+
+void writeLog(String text, { int logLevel = 0 }) {
+  final now = DateTime.now();
+  print(
+    '${'-'*logLevel*2}'
+    '[${paddedValue(now.hour)}:'
+    '${paddedValue(now.minute)}:'
+    '${paddedValue(now.second)}] '
+    '$text',
+  );
+}

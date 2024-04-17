@@ -1,0 +1,7 @@
+backupVolumePath: /Absolute/Path/To/Backup/Volume
+encryptedVolumePath: /Absolute/Path/To/Encrypted/VeryCrypt/Volume
+backupLocations:
+  - name: Folder Name in Backup
+    path: /Absolute/Path/To/Folder
+  - name: Another Folder Name in Backup
+    path: /Absolute/Path/To/Another/Folder
