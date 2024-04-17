@@ -1,4 +1,5 @@
-config.yaml
+*.yaml
+!example-config.yaml
 
 # See https://www.dartlang.org/guides/libraries/private-files
 

@@ -65,7 +65,7 @@ void main(List<String> arguments) async {
       'mounting with VeraCrypt) ⛰️\n'
       '${newLogLinePadding()}'
       '3️⃣  When you are done, run '
-      '`dart /Volumes/Backup/create_backup/encrypt.dart` 📜',
+      '`bash start.sh encrypt <LOG_PATH>` 📜',
     );
   } else {
     writeLog(

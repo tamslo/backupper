@@ -9,7 +9,8 @@ void main(List<String> arguments) async {
   await copyBackupsToEncryptedVolume();
   writeLog(
     'Encryption done 🔒 📦 🏁 \n\n'
-    '⏭️  To continue with sanity checks and the cleanup, run `dart /Volumes/Backup/create_backup/cleanup.dart` 📜',
+    '⏭️  To continue with sanity checks and the cleanup, run '
+    '`bash start.sh cleanup <LOG_PATH>` 📜',
   );
   exit(0);
 }
