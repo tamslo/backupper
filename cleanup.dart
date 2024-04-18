@@ -19,7 +19,7 @@ void main(List<String> arguments) async {
       continue;
     }
     writeLog('Cleaning up $backupPath 🧹', logLevel: 1);
-    final success = await runProcessForBackup(backupPath, 'rm', [ backupPath ]);
+    final success = await removePath(backupPath);
     cleanupSuccesses.add(success);
   }
   Directory(constants.backupDestination).deleteSync();

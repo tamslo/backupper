@@ -9,10 +9,9 @@ void main(List<String> arguments) async {
   final constants = await Constants.getInstance();
   for (final backupPath in getBackupPaths(constants)) {
     writeLog('Encrypting $backupPath 🏃', logLevel: 1);
-    final success = await runProcessForBackup(
+    final success = await copyPath(
       backupPath,
-      'cp',
-      [ backupPath, getEncryptedPath(backupPath, constants) ],
+      getEncryptedPath(backupPath, constants),
     );
     if (success) {
       writeLog('Encrypting $backupPath done ✅', logLevel: 1);

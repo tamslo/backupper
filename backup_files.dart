@@ -18,10 +18,9 @@ void main(List<String> arguments) async {
       '⏭️  To continue, an encrypted volume needs to be present:\n'
       '${newLogLinePadding()}'
       '1️⃣  Create an encrypted volume ${constants.dateStamp} with at least '
-      '${fileSize.toString()} GiB 🔒, e.g., using VeraCrypt 🦊\n'
+      '${fileSize.toString()} GiB 🔒, e.g., using VeraCrypt\n'
       '${newLogLinePadding()}'
-      '2️⃣  Mount the volume as ${constants.encryptedVolumePath} (default when '
-      'mounting with VeraCrypt) ⛰️\n'
+      '2️⃣  Mount the volume as ${constants.encryptedVolumePath} ⛰️\n'
       '${newLogLinePadding()}'
       '3️⃣  When you are done, run '
       '`bash start.sh encrypt <LOG_PATH>` 📜',

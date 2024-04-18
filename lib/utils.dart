@@ -9,9 +9,6 @@ String getEncryptedPath(String zipPath, Constants constants) =>
     constants.encryptedVolumePath,
   );
 
-bool isIncludedInSubfolderWiseBackup(FileSystemEntity fileEntity) =>
-  fileEntity is Directory && !path.basename(fileEntity.path).startsWith('.');
-
 String getZipPath(
   BackupLocation backupLocation,
   String zipDestination,
@@ -30,21 +27,22 @@ List<String> getBackupPaths(Constants constants) {
 
 String getSubfolderBackupDestination(
   BackupLocation backupLocation,
-  Constants constants,
-) =>
-  path.join(
-    constants.backupDestination,
+  String backupDestination,
+) {
+  return path.join(
+    backupDestination,
     backupLocation.name,
   );
+}
 
-Future<bool> runProcessForBackup(
-  String backupPath,
+Future<bool> _runProcessForPath(
+  String path,
   String command,
   List<String> arguments,
   { int logLevel = 1 }
 )
  async {
-  if (FileSystemEntity.isDirectorySync(backupPath)) {
+  if (FileSystemEntity.isDirectorySync(path)) {
     arguments = [ '-r', ...arguments ];
   }
   final result = await Process.run(command, arguments);
@@ -57,6 +55,12 @@ Future<bool> runProcessForBackup(
   }
   return success;
 }
+
+Future<bool> removePath(String path) =>
+  _runProcessForPath(path, 'rm', [ path ]);
+
+Future<bool> copyPath(String originalPath, String destinationPath) =>
+  _runProcessForPath(originalPath, 'cp', [ originalPath, destinationPath ]);
 
 Future<int> getFolderSize(String path) async {
   var folderSize = 0;
