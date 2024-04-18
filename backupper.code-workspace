@@ -8,6 +8,9 @@
 		"cSpell.words": [
 			"Backupper",
 			"subfolders"
+		],
+		"cSpell.ignorePaths": [
+			"config.yaml"
 		]
 	}
 }

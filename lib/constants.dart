@@ -5,6 +5,15 @@ import 'package:yaml/yaml.dart';
 import 'module.dart';
 
 class Constants {
+
+  Constants._(dynamic config)
+      : today = DateTime.now(),
+        backupVolumePath = config['backupVolumePath'],
+        encryptedVolumePath = config['encryptedVolumePath'],
+        backupLocations = config['backupLocations'].map<BackupLocation>(
+          (object) =>
+            BackupLocation.fromPath(object['path'], name: object['name']))
+            .toList();
   static Constants? _constants;
 
   static Future<Constants> getInstance() async {
@@ -17,18 +26,9 @@ class Constants {
     return _constants!;
   }
 
-  Constants._(dynamic config)
-      : today = new DateTime.now(),
-        backupVolumePath = config['backupVolumePath'],
-        encryptedVolumePath = config['encryptedVolumePath'],
-        backupLocations = config['backupLocations'].map<BackupLocation>(
-          (object) =>
-            BackupLocation.fromPath(object['path'], name: object['name']))
-            .toList();
-
   final zipEnding = '.zip';
   final gibBytes = 1073741824;
-  int get folderBytesThreshold => 10 * gibBytes;
+  int get compressionThreshold => 10 * gibBytes;
 
   late DateTime today;
   late String backupVolumePath;

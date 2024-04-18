@@ -5,7 +5,7 @@ import 'package:create_backup/module.dart';
 void main(List<String> arguments) async {
   writeLog('Started backup cleanup 🧹 🚀');
   final constants = await Constants.getInstance();
-  var cleanupSuccesses = <bool>[];
+  final cleanupSuccesses = <bool>[];
   for (final backupPath in getBackupPaths(constants)) {
     final backupSize = await getBackupSize(backupPath);
     final copiedSize =
@@ -19,7 +19,7 @@ void main(List<String> arguments) async {
       continue;
     }
     writeLog('Cleaning up $backupPath 🧹', logLevel: 1);
-    final success = await cleanUpBackup(backupPath);
+    final success = await runProcessForBackup(backupPath, 'rm', [ backupPath ]);
     cleanupSuccesses.add(success);
   }
   Directory(constants.backupDestination).deleteSync();

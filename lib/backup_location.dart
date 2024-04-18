@@ -5,10 +5,8 @@ class BackupLocation {
     String path,
     {
       required this.name,
-      this.subfolderWise = false,
     }
   ) : directory = Directory(path);
   final Directory directory;
   final String name;
-  final bool subfolderWise;
 }
