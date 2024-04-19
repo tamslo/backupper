@@ -5,44 +5,47 @@ import 'package:path/path.dart' as path;
 
 import 'module.dart';
 
-Future<bool> compress(
+Future<bool> move(
   BackupLocation backupLocation,
   String backupDestination,
   { int logLevel = 1 }
 ) async {
   final constants = await Constants.getInstance();
-  final folderSize = await getFolderSize(backupLocation.directory.path);
-  if (folderSize > constants.compressionThreshold) {
-    final prettyFolderSize =
-      (folderSize / constants.gibBytes).toStringAsFixed(2);
-    writeLog(
-      'Backing up ${backupLocation.name} folder-wise '
-      '($prettyFolderSize GiB) 🏃',
-      logLevel: logLevel,
-    );
-    return compressContents(
-      backupLocation,
-      backupDestination,
-      logLevel: logLevel + 1,
-    );
-  }
   var success = true;
-  final destinationPath = getZipPath(
+  final destinationFilePath = getZipPath(
     backupLocation,
     backupDestination,
     constants,
   );
-  final backupPresent = File(destinationPath).existsSync();
-  if (backupPresent) {
+  final backupFilePresent = File(destinationFilePath).existsSync();
+  if (backupFilePresent) {
     writeLog(
       'Backup for ${backupLocation.name} already exists ✅',
       logLevel: logLevel,
     );
     return success;
   }
-  writeLog('Backing up ${backupLocation.name} 🏃', logLevel: logLevel);
+  writeLog(
+    'Calculating folder size for ${backupLocation.name} 🧮',
+    logLevel: logLevel,
+  );
+  final folderSize = await getFolderSize(backupLocation.directory.path);
+  final folderSizeInfo =
+      '(${(folderSize / constants.gibBytes).toStringAsFixed(2)} GiB)';
+  if (folderSize > constants.compressionThreshold) {
+    writeLog(
+      'Backing up ${backupLocation.name} folder-wise $folderSizeInfo  🏃',
+      logLevel: logLevel,
+    );
+    return moveContents(
+      backupLocation,
+      backupDestination,
+      logLevel: logLevel + 1,
+    );
+  }
+  writeLog('Backing up ${backupLocation.name} $folderSizeInfo 🏃', logLevel: logLevel);
   final encoder = ZipFileEncoder();
-  encoder.create(destinationPath);
+  encoder.create(destinationFilePath);
   try {
     await encoder.addDirectory(backupLocation.directory);
     writeLog('Back up of ${backupLocation.name} done ✅', logLevel: logLevel);
@@ -50,22 +53,21 @@ Future<bool> compress(
     writeLog(
       '⛔️ Error while backing up ${backupLocation.name}\n\n'
       '${newLogLinePadding(logLevel: logLevel)}${e.toString()}\n\n'
-      '${newLogLinePadding(logLevel: logLevel)}Removing $destinationPath 🧹',
+      '${newLogLinePadding(logLevel: logLevel)}Removing $destinationFilePath 🧹',
       logLevel: logLevel,
     );
-    if (File(destinationPath).existsSync()) File(destinationPath).deleteSync();
+    if (File(destinationFilePath).existsSync()) File(destinationFilePath).deleteSync();
     success = false;
   }
   encoder.close();
   return success;
 }
 
-Future<bool> compressContents(
+Future<bool> moveContents(
   BackupLocation backupLocation,
   String backupDestination,
   { required int logLevel }
 ) async {
-  final constants = await Constants.getInstance();
   final subfolderBackupDestination =
     getSubfolderBackupDestination(backupLocation, backupDestination);
   // Might still be present from earlier backups
@@ -74,15 +76,25 @@ Future<bool> compressContents(
   }
   var backupSuccess = true;
   for (final fileEntity in backupLocation.directory.listSync()) {
+    final fileEntityName = path.basename(fileEntity.path);
+    if (
+      fileEntityName.startsWith('.') &&
+      !fileEntityName.startsWith('.git') &&
+      !fileEntityName.startsWith('.bash')
+    ) {
+      final fileEntityType = fileEntity.runtimeType.toString()
+        .toLowerCase()
+        .replaceAll('_', '');
+      writeLog(
+        'ℹ️  Ignoring $fileEntityType $fileEntityName',
+        logLevel: logLevel,
+      );
+      continue;
+    }
     if (fileEntity is! Directory) {
-      final fileName = path.basename(fileEntity.path);
-      if (constants.ignoredFiles.contains(fileName)) {
-        writeLog('ℹ️  Ignoring $fileName', logLevel: logLevel);
-        continue;
-      }
       backupSuccess = await copyPath(
         fileEntity.path,
-        path.join(subfolderBackupDestination, fileName,
+        path.join(subfolderBackupDestination, fileEntityName,
       )) && backupSuccess;
       continue;
     }
@@ -90,7 +102,7 @@ Future<bool> compressContents(
       fileEntity.path,
       name: path.basename(fileEntity.path),
     );
-    backupSuccess = await compress(
+    backupSuccess = await move(
       subfolderBackupLocation,
       subfolderBackupDestination,
       logLevel: logLevel,

@@ -28,7 +28,6 @@ class Constants {
   final zipEnding = '.zip';
   final gibBytes = 1073741824;
   int get compressionThreshold => 9 * gibBytes;
-  final ignoredFiles = [ '.DS_Store' ];
 
   late DateTime today;
   late String backupVolumePath;

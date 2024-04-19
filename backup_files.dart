@@ -3,12 +3,13 @@ import 'dart:io';
 import 'package:create_backup/module.dart';
 
 void main(List<String> arguments) async {
+  beginNewLogPart();
   writeLog('Started backup 💽 🚀');
   final constants = await Constants.getInstance();
   var backupSuccess = true;
   for (final backupLocation in constants.backupLocations) {
   backupSuccess =
-      await compress(backupLocation, constants.backupDestination)
+      await move(backupLocation, constants.backupDestination)
       && backupSuccess;
   }
   writeLog('Files backed up 💽 🏁');
