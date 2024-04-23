@@ -72,7 +72,7 @@ Future<bool> moveContents(
     getSubfolderBackupDestination(backupLocation, backupDestination);
   // Might still be present from earlier backups
   if (!Directory(subfolderBackupDestination).existsSync()) {
-    Directory(subfolderBackupDestination).createSync();
+    Directory(subfolderBackupDestination).createSync(recursive: true);
   }
   var backupSuccess = true;
   for (final fileEntity in backupLocation.directory.listSync()) {
