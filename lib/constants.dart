@@ -39,5 +39,5 @@ class Constants {
     '${today.month.toString().padLeft(2,'0')}-'
     '${today.day.toString().padLeft(2,'0')}';
 
-  String get backupDestination =>  '$backupVolumePath/$dateStamp';
+  String get backupDestination =>  '$backupVolumePath/$dateStamp-unencrypted';
 }
