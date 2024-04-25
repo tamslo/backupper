@@ -39,10 +39,13 @@ Future<bool> _runProcessForPath(
   String path,
   String command,
   List<String> arguments,
-  { int logLevel = 1 }
+  {
+    int logLevel = 1,
+    bool addRecursiveOption = true,
+  }
 )
  async {
-  if (FileSystemEntity.isDirectorySync(path)) {
+  if (FileSystemEntity.isDirectorySync(path) && addRecursiveOption) {
     arguments = [ '-r', ...arguments ];
   }
   final result = await Process.run(command, arguments);
@@ -61,6 +64,17 @@ Future<bool> removePath(String path) =>
 
 Future<bool> copyPath(String originalPath, String destinationPath) =>
   _runProcessForPath(originalPath, 'cp', [ originalPath, destinationPath ]);
+
+Future<bool> zipPath(String originalPath, String destinationZipPath) async {
+  // See https://superuser.com/a/1170997
+  final dittoOptions = [ '-c', '-k', '--sequesterRsrc', '--keepParent' ];
+  return _runProcessForPath(
+    originalPath,
+    'ditto',
+    [ ...dittoOptions, originalPath, destinationZipPath ],
+    addRecursiveOption: false,
+  );
+}
 
 Future<int> getFolderSize(String path) async {
   var folderSize = 0;

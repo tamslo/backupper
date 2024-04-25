@@ -1,9 +1,40 @@
 import 'dart:io';
 
-import 'package:archive/archive_io.dart';
 import 'package:path/path.dart' as path;
 
 import 'module.dart';
+
+String _formatSizeInfo(Constants constants, int size) =>
+  '(${(size / constants.gibBytes).toStringAsFixed(2)} GiB)';
+
+Future<bool> _moveSingle({
+  required String originPath,
+  required String destinationPath,
+  required Future<bool> Function(
+    String originalPath,
+    String destinationPath,
+  ) moveSingle,
+  int? originSize,
+  required int logLevel,
+}) async {
+  final constants = await Constants.getInstance();
+  final originName = path.basename(originPath);
+  writeLog('Backing up $originName ${
+    _formatSizeInfo(constants, originSize ?? File(originPath).statSync().size)
+  } 🏃', logLevel: logLevel);
+  final success = await moveSingle(originPath, destinationPath);
+  if (success) {
+    writeLog('Back up of $originName done ✅', logLevel: logLevel);
+  } else {
+    writeLog(
+      '⛔️ Error while backing up $originName,'
+      ' 🧹 removing $destinationPath',
+      logLevel: logLevel,
+    );
+    if (File(destinationPath).existsSync()) File(destinationPath).deleteSync();
+  }
+  return success;
+}
 
 Future<bool> move(
   BackupLocation backupLocation,
@@ -11,7 +42,6 @@ Future<bool> move(
   { int logLevel = 1 }
 ) async {
   final constants = await Constants.getInstance();
-  var success = true;
   final destinationFilePath = getZipPath(
     backupLocation,
     backupDestination,
@@ -23,44 +53,46 @@ Future<bool> move(
       'Backup for ${backupLocation.name} already exists ✅',
       logLevel: logLevel,
     );
-    return success;
+    return true;
+  }
+  final backupFolderPresent = 
+    Directory(
+      getSubfolderBackupDestination(backupLocation, backupDestination)
+    ).existsSync();
+
+  Future<bool> moveCurrentContent() => moveContents(
+    backupLocation,
+    backupDestination,
+    logLevel: logLevel + 1,
+  );
+  if (backupFolderPresent) {
+    writeLog(
+      'Continuing folder-wise backup for ${backupLocation.name} 🏃',
+      logLevel: logLevel,
+    );
+    return moveCurrentContent();
   }
   writeLog(
     'Calculating folder size for ${backupLocation.name} 🧮',
     logLevel: logLevel,
   );
   final folderSize = await getFolderSize(backupLocation.directory.path);
-  final folderSizeInfo =
-      '(${(folderSize / constants.gibBytes).toStringAsFixed(2)} GiB)';
   if (folderSize > constants.compressionThreshold) {
     writeLog(
-      'Backing up ${backupLocation.name} folder-wise $folderSizeInfo  🏃',
+      'Backing up ${backupLocation.name} folder-wise ${
+        _formatSizeInfo(constants, folderSize)
+      }  🏃',
       logLevel: logLevel,
     );
-    return moveContents(
-      backupLocation,
-      backupDestination,
-      logLevel: logLevel + 1,
-    );
+    return moveCurrentContent();
   }
-  writeLog('Backing up ${backupLocation.name} $folderSizeInfo 🏃', logLevel: logLevel);
-  final encoder = ZipFileEncoder();
-  encoder.create(destinationFilePath);
-  try {
-    await encoder.addDirectory(backupLocation.directory);
-    writeLog('Back up of ${backupLocation.name} done ✅', logLevel: logLevel);
-  } catch (e) {
-    writeLog(
-      '⛔️ Error while backing up ${backupLocation.name}\n\n'
-      '${newLogLinePadding(logLevel: logLevel)}${e.toString()}\n\n'
-      '${newLogLinePadding(logLevel: logLevel)}Removing $destinationFilePath 🧹',
-      logLevel: logLevel,
-    );
-    if (File(destinationFilePath).existsSync()) File(destinationFilePath).deleteSync();
-    success = false;
-  }
-  encoder.close();
-  return success;
+  return _moveSingle(
+    originPath: backupLocation.directory.path,
+    destinationPath: destinationFilePath,
+    moveSingle: zipPath,
+    logLevel: logLevel,
+    originSize: folderSize,
+  );
 }
 
 Future<bool> moveContents(
@@ -78,9 +110,12 @@ Future<bool> moveContents(
   for (final fileEntity in backupLocation.directory.listSync()) {
     final fileEntityName = path.basename(fileEntity.path);
     if (
-      fileEntityName.startsWith('.') &&
-      !fileEntityName.startsWith('.git') &&
-      !fileEntityName.startsWith('.bash')
+      (
+        fileEntityName.startsWith('.') &&
+        !fileEntityName.startsWith('.git') &&
+        !fileEntityName.startsWith('.bash')
+      ) ||
+      fileEntityName == ('desktop.ini')
     ) {
       final fileEntityType = fileEntity.runtimeType.toString()
         .toLowerCase()
@@ -91,20 +126,33 @@ Future<bool> moveContents(
       );
       continue;
     }
-    if (fileEntity is! Directory) {
-      backupSuccess = await copyPath(
-        fileEntity.path,
-        path.join(subfolderBackupDestination, fileEntityName,
-      )) && backupSuccess;
-      continue;
-    }
-    final subfolderBackupLocation = BackupLocation.fromPath(
+    if (fileEntity is Directory) {
+      final subfolderBackupLocation = BackupLocation.fromPath(
       fileEntity.path,
       name: path.basename(fileEntity.path),
-    );
-    backupSuccess = await move(
-      subfolderBackupLocation,
+      );
+      backupSuccess = await move(
+        subfolderBackupLocation,
+        subfolderBackupDestination,
+        logLevel: logLevel,
+      ) && backupSuccess;
+      continue;
+    }
+    final fileDestinationPath = path.join(
       subfolderBackupDestination,
+      fileEntityName,
+    );
+    if (File(fileDestinationPath).existsSync()) {
+      writeLog(
+        'Backup for $fileEntityName already exists ✅',
+        logLevel: logLevel,
+      );
+      continue;
+    }
+    backupSuccess = await _moveSingle(
+      originPath: fileEntity.path,
+      destinationPath: fileDestinationPath,
+      moveSingle: copyPath,
       logLevel: logLevel,
     ) && backupSuccess;
   }
